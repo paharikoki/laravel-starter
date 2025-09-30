@@ -24,6 +24,7 @@ RUN apk add --no-cache \
     npm \
     oniguruma-dev \
     postgresql-dev \
+    su-exec \
     supervisor \
     zip \
     unzip
@@ -77,38 +78,51 @@ COPY package*.json ./
 
 # Install npm dependencies on dev mode
 RUN npm install
+
+# Create a user with dynamic UID/GID (will be overridden by entrypoint if needed)
+ARG USER_ID=1000
+ARG GROUP_ID=1000
+RUN addgroup -g ${GROUP_ID} -S appuser && \
+    adduser -u ${USER_ID} -S appuser -G appuser -s /bin/sh
+
 # Copy existing application code
 COPY . .
 
+# Create entrypoint script for dynamic permission handling
+COPY docker/entrypoint-prod.sh /usr/local/bin/entrypoint.sh
+RUN chmod +x /usr/local/bin/entrypoint.sh
+
 # Set proper permissions before running composer scripts
-RUN chown -R www-data:www-data /var/www/html \
+RUN chown -R appuser:appuser /var/www/html \
     && chmod -R 755 /var/www/html/storage \
     && chmod -R 755 /var/www/html/bootstrap/cache \
     && chmod 644 /var/www/html/composer.lock 2>/dev/null || true
 
-# Run composer scripts now that the full application is copied (as www-data)
-USER www-data
+# Run composer scripts now that the full application is copied (as appuser)
+USER appuser
 RUN composer run-script post-autoload-dump --no-interaction
 
-# Build assets (as www-data)
+# Build assets (as appuser)
 RUN npm run build
 
 # Switch back to root to create directories and set final permissions
 USER root
 
-# Create necessary directories
+# Create necessary directories and set proper ownership
 RUN mkdir -p /var/www/html/storage/logs \
     && mkdir -p /var/www/html/storage/framework/cache \
     && mkdir -p /var/www/html/storage/framework/sessions \
     && mkdir -p /var/www/html/storage/framework/views \
-    && chown -R www-data:www-data /var/www/html/storage \
-    && chown -R www-data:www-data /var/www/html/bootstrap/cache
+    && chown -R appuser:appuser /var/www/html/storage \
+    && chown -R appuser:appuser /var/www/html/bootstrap/cache \
+    && chmod -R 755 /var/www/html/storage \
+    && chmod -R 755 /var/www/html/bootstrap/cache
 
 # Expose port 9000 for PHP-FPM
 EXPOSE 9000
 
-# Switch to non-root user
-USER www-data
+# Use entrypoint to handle permissions dynamically
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
 
 # Start PHP-FPM server
 CMD ["php-fpm"]

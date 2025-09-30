@@ -43,8 +43,8 @@ docker-compose exec app npm run build
 
 # Set proper permissions
 echo "🔧 Setting proper permissions..."
-docker-compose exec app chown -R www-data:www-data /var/www/html/storage
-docker-compose exec app chown -R www-data:www-data /var/www/html/bootstrap/cache
+docker-compose exec app chown -R appuser:appuser /var/www/html/storage
+docker-compose exec app chown -R appuser:appuser /var/www/html/bootstrap/cache
 docker-compose exec app chmod -R 755 /var/www/html/storage
 docker-compose exec app chmod -R 755 /var/www/html/bootstrap/cache
 
