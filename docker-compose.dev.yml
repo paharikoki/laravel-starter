@@ -7,7 +7,8 @@ services:
     container_name: laravel_app
     restart: unless-stopped
     working_dir: /var/www/html
-    user: "1000:1000"  # Use host user ID to avoid permission issues
+    # Run as the container's appuser instead of forcing host user ID
+    # This allows proper permission handling through the entrypoint script
     volumes:
       - ./:/var/www/html
       - ./docker/php/php.ini:/usr/local/etc/php/conf.d/laravel.ini

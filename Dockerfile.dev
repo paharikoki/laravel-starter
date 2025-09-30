@@ -76,15 +76,15 @@ RUN addgroup -g 1000 -S appuser && \
     adduser -u 1000 -S appuser -G appuser
 
 # Create necessary directories with proper permissions
+# Note: We'll set final permissions in the entrypoint script
 RUN mkdir -p /var/www/html/storage/logs \
     && mkdir -p /var/www/html/storage/framework/cache \
     && mkdir -p /var/www/html/storage/framework/sessions \
     && mkdir -p /var/www/html/storage/framework/views \
+    && mkdir -p /var/www/html/storage/app/public \
     && mkdir -p /var/www/html/bootstrap/cache \
     && mkdir -p /var/www/html/vendor \
-    && mkdir -p /var/www/html/node_modules \
-    && chown -R appuser:appuser /var/www/html \
-    && chmod -R 755 /var/www/html
+    && mkdir -p /var/www/html/node_modules
 
 # Create entrypoint script to handle permissions dynamically
 COPY docker/entrypoint.sh /usr/local/bin/entrypoint.sh
@@ -93,7 +93,7 @@ RUN chmod +x /usr/local/bin/entrypoint.sh
 # Expose port 9000 for PHP-FPM
 EXPOSE 9000
 
-# Use entrypoint to fix permissions on startup
+# Use entrypoint to fix permissions on startup (runs as root initially)
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
 
 # Start PHP-FPM server
