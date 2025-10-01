@@ -1,0 +1,46 @@
+#!/bin/bash
+# Laravel Docker Production - Modern Startup
+set -e
+
+echo "🚀 Starting Laravel Production Environment..."
+
+# Copy environment if needed
+[ ! -f .env ] && cp .env.docker .env
+
+# Start production services
+echo "📦 Starting production services..."
+docker-compose up -d --build
+
+# Wait for MySQL
+echo "⏳ Waiting for MySQL..."
+until docker-compose exec mysql mysqladmin ping -h"localhost" --silent 2>/dev/null; do
+    sleep 2
+done
+
+# Install dependencies and setup
+echo "📋 Installing dependencies..."
+docker-compose exec app composer install --no-interaction --optimize-autoloader --no-dev
+docker-compose exec app npm ci --only=production
+
+# Generate app key if needed
+if ! grep -q "APP_KEY=base64:" .env; then
+    echo "🔑 Generating application key..."
+    docker-compose exec app php artisan key:generate --no-interaction
+fi
+
+# Run migrations and optimize
+echo "🗄️  Running migrations and optimizing..."
+docker-compose exec app php artisan migrate --force
+docker-compose exec app npm run build
+docker-compose exec app php artisan config:cache
+docker-compose exec app php artisan route:cache
+docker-compose exec app php artisan view:cache
+
+echo ""
+echo "✅ Production environment ready!"
+echo "🌐 App: http://localhost"
+echo ""
+echo "🔧 Commands:"
+echo "  make shell     # Access container"
+echo "  make logs      # View logs"
+echo "  make stop      # Stop services"

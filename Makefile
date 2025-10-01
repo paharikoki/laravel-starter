@@ -1,24 +1,50 @@
 # Laravel Docker Makefile
-.PHONY: help build up down restart logs shell composer artisan npm test
+.PHONY: help dev prod stop shell logs
 
 # Default target
 help: ## Show this help message
-	@echo 'Laravel 12 Docker Development Environment'
-	@echo '========================================='
-	@echo ''
-	@echo 'Quick Start:'
-	@echo '  ./start-dev.sh                # One-command start (recommended)'
-	@echo '  make setup                    # First time setup'
-	@echo '  make start                    # Start development mode'
-	@echo ''
-	@echo 'Development Commands:'
-	@echo '  make shell                    # Access container'
-	@echo '  make logs                     # View logs'
-	@echo '  make stop                     # Stop services'
-	@echo '  make fresh                    # Fresh setup (reset everything)'
-	@echo ''
-	@echo 'All Available Targets:'
-	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z_-]+:.*?## / {printf "  %-20s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
+	@echo "Laravel Docker Commands:"
+	@echo "  dev       Start development environment"
+	@echo "  prod      Start production environment"
+	@echo "  stop      Stop all services"
+	@echo "  shell     Access app container"
+	@echo "  logs      View all logs"
+	@echo "  vite      Start Vite hot reload (run after dev)"
+
+# Main commands
+dev: ## Start development environment
+	./dev
+
+prod: ## Start production environment
+	./prod
+
+stop: ## Stop all services
+	docker-compose -f docker-compose.dev.yml down
+	docker-compose down
+
+# Development tools
+shell: ## Access app container shell
+	docker-compose -f docker-compose.dev.yml exec app bash
+
+logs: ## Show logs for all services
+	docker-compose -f docker-compose.dev.yml logs -f
+
+vite: ## Start Vite development server with hot reload
+	docker-compose -f docker-compose.dev.yml exec app npm run dev
+
+# Laravel commands
+artisan: ## Run artisan command (usage: make artisan cmd="migrate")
+	docker-compose -f docker-compose.dev.yml exec app php artisan $(cmd)
+
+migrate: ## Run database migrations
+	docker-compose -f docker-compose.dev.yml exec app php artisan migrate
+
+# Cache commands
+cache-clear: ## Clear all caches
+	docker-compose -f docker-compose.dev.yml exec app php artisan cache:clear
+	docker-compose -f docker-compose.dev.yml exec app php artisan config:clear
+	docker-compose -f docker-compose.dev.yml exec app php artisan route:clear
+	docker-compose -f docker-compose.dev.yml exec app php artisan view:clear
 
 # Docker commands
 build: ## Build Docker containers
@@ -56,6 +82,16 @@ artisan: dev-artisan ## Alias for 'make dev-artisan' - Run artisan commands
 npm: dev-npm ## Alias for 'make dev-npm' - Install npm dependencies
 test: dev-test ## Alias for 'make dev-test' - Run tests
 logs: dev-logs ## Alias for 'make dev-logs' - View logs
+
+# Development with hot reload
+dev-with-vite: ## Start development environment with Vite hot reload
+	docker-compose -f docker-compose.dev.yml up -d
+
+dev-vite-only: ## Start only Vite service for hot reload
+	docker-compose -f docker-compose.dev.yml up vite
+
+dev-stop-vite: ## Stop Vite service
+	docker-compose -f docker-compose.dev.yml stop vite
 
 # Development commands
 setup: ## Initial setup (run after first clone)
@@ -97,16 +133,29 @@ tinker: ## Start Laravel tinker
 
 # Frontend commands
 npm: ## Run npm install
-	docker-compose exec app npm install
+	docker-compose -f docker-compose.dev.yml exec app npm install
 
 npm-dev: ## Run npm dev
-	docker-compose exec app npm run dev
+	docker-compose -f docker-compose.dev.yml exec app npm run dev
 
 npm-build: ## Build assets for production
-	docker-compose exec app npm run build
+	docker-compose -f docker-compose.dev.yml exec app npm run build
 
 npm-watch: ## Watch assets for changes
-	docker-compose exec app npm run dev -- --watch
+	docker-compose -f docker-compose.dev.yml exec app npm run dev
+
+# Vite hot reload commands
+vite-dev: ## Start Vite development server with hot reload
+	docker-compose -f docker-compose.dev.yml up vite
+
+vite-build: ## Build assets for production using Vite
+	docker-compose -f docker-compose.dev.yml exec vite npm run build
+
+vite-logs: ## View Vite service logs
+	docker-compose -f docker-compose.dev.yml logs -f vite
+
+vite-restart: ## Restart Vite service
+	docker-compose -f docker-compose.dev.yml restart vite
 
 # Testing
 test: ## Run PHPUnit tests

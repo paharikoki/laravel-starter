@@ -18,8 +18,8 @@ fix_permissions() {
     # Set ownership to appuser:appuser for Laravel directories
     chown -R appuser:appuser /var/www/html/storage
     chown -R appuser:appuser /var/www/html/bootstrap/cache
-    chown appuser:appuser /var/www/html/vendor 2>/dev/null || true
-    chown appuser:appuser /var/www/html/node_modules 2>/dev/null || true
+    chown -R appuser:appuser /var/www/html/vendor 2>/dev/null || true
+    chown -R appuser:appuser /var/www/html/node_modules 2>/dev/null || true
 
     # Set proper permissions for Laravel directories
     # Using 775 for directories and 664 for files to ensure group write access
@@ -28,9 +28,14 @@ fix_permissions() {
     find /var/www/html/bootstrap/cache -type d -exec chmod 775 {} \; 2>/dev/null || true
     find /var/www/html/bootstrap/cache -type f -exec chmod 664 {} \; 2>/dev/null || true
 
-    # Ensure the directories are writable
+    # Ensure writable permissions for storage and cache
     chmod -R 775 /var/www/html/storage 2>/dev/null || true
     chmod -R 775 /var/www/html/bootstrap/cache 2>/dev/null || true
+    
+    # Ensure node_modules is writable for Vite temp files
+    if [ -d "/var/www/html/node_modules" ]; then
+        chmod -R 775 /var/www/html/node_modules 2>/dev/null || true
+    fi
 
     # Make sure the working directory is accessible
     chmod 755 /var/www/html 2>/dev/null || true
@@ -81,7 +86,15 @@ if [ -f "/var/www/html/artisan" ]; then
 fi
 
 # Execute the original command
-if [ "$1" = "php-fpm" ]; then
+if [ "$1" = "supervisord" ]; then
+    # Start Vite in the background as appuser
+    echo "🎨 Starting Vite development server..."
+    su-exec appuser sh -c "cd /var/www/html && npm run dev" &
+    
+    # Start PHP-FPM in the foreground as appuser
+    echo "🚀 Starting PHP-FPM..."
+    exec php-fpm -F
+elif [ "$1" = "php-fpm" ]; then
     echo "🚀 Starting PHP-FPM..."
     # Run PHP-FPM as root, but it will spawn workers as appuser (configured in php-fpm.conf)
     # This allows proper access to file descriptors while workers run as appuser

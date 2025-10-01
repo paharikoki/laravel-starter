@@ -4,79 +4,50 @@ A complete Docker environment for Laravel 12 with PHP-FPM on Alpine, Nginx Alpin
 
 ## 🚀 Quick Start
 
-1. **Clone and setup**:
-   ```bash
-   git clone <your-repo>
-   cd laravel-starter
-   make setup
-   ```
-
-2. **Start the application**:
-   ```bash
-   make up
-   ```
-
-3. **Access your application**:
-   - **Laravel App**: http://localhost
-   - **Mailhog (Email testing)**: http://localhost:8025
-
-## 📦 Services
-
-- **app**: PHP 8.3-FPM on Alpine with Laravel 12
-- **nginx**: Nginx on Alpine (Port 80)
-- **mysql**: MySQL 8.0 (Port 3306)
-- **redis**: Redis on Alpine (Port 6379)
-- **mailhog**: Email testing (Ports 1025/8025) - Development only
-- **node**: Node.js for asset compilation - Development only
-- **queue**: Laravel queue worker - Production only
-- **scheduler**: Laravel task scheduler - Production only
-
-## 🛠️ Available Commands
-
-### Docker Management
-```bash
-make up              # Start all services
-make down            # Stop all services
-make restart         # Restart all services
-make build           # Build containers
-make logs            # View all logs
-make shell           # Access app container
-```
-
-### Laravel Commands
-```bash
-make artisan cmd="migrate"     # Run artisan commands
-make migrate                   # Run migrations
-make migrate-fresh            # Fresh migrations with seeding
-make tinker                   # Laravel tinker
-make test                     # Run tests
-```
-
-### Frontend Development
-```bash
-make npm              # Install npm dependencies
-make npm-dev          # Run development build
-make npm-build        # Production build
-make npm-watch        # Watch for changes
-```
-
-### Cache Management
-```bash
-make cache-clear      # Clear all caches
-make cache-optimize   # Optimize for production
-```
-
-## 🔧 Development vs Production
-
 ### Development Mode
 ```bash
-make dev              # Includes Mailhog and Node.js
+./dev
 ```
 
 ### Production Mode
 ```bash
-make prod             # Includes queue worker and scheduler
+./prod
 ```
+
+### Vite Hot Reload (after starting dev)
+```bash
+make vite
+```
+
+## 📦 Services
+
+- **app**: PHP 8.3-FPM on Alpine with Laravel 12 + Vite (Port 5173)
+- **nginx**: Nginx on Alpine (Port 80)
+- **mysql**: MySQL 8.0 (Port 3306)
+- **redis**: Redis on Alpine (Port 6379)
+- **mailhog**: Email testing (Ports 1025/8025) - Development only
+
+## 🛠️ Available Commands
+
+```bash
+make dev       # Start development environment
+make prod      # Start production environment
+make stop      # Stop all services
+make shell     # Access app container
+make logs      # View all logs
+make vite      # Start Vite hot reload
+
+# Laravel commands
+make artisan cmd="migrate"  # Run artisan commands
+make migrate               # Run migrations
+make cache-clear          # Clear all caches
+```
+
+## 🔧 URLs
+
+- **Laravel App**: http://localhost
+- **Mailhog (Email testing)**: http://localhost:8025
+- **Vite Dev Server**: http://localhost:5173 (when running `make vite`)
 
 ## 📁 Project Structure
 

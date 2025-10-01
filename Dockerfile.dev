@@ -86,15 +86,17 @@ RUN mkdir -p /var/www/html/storage/logs \
     && mkdir -p /var/www/html/vendor \
     && mkdir -p /var/www/html/node_modules
 
-# Create entrypoint script to handle permissions dynamically
+# Copy entrypoint and supervisord config
 COPY docker/entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh
+COPY docker/supervisord.conf /etc/supervisord.conf
 
-# Expose port 9000 for PHP-FPM
+# Expose ports for PHP-FPM and Vite
 EXPOSE 9000
+EXPOSE 5173
 
 # Use entrypoint to fix permissions on startup (runs as root initially)
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
 
-# Start PHP-FPM server
-CMD ["php-fpm"]
+# Start supervisord to run both PHP-FPM and Vite
+CMD ["supervisord", "-c", "/etc/supervisord.conf"]

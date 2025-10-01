@@ -1,0 +1,45 @@
+#!/bin/bash
+# Laravel Docker Development - Modern Startup
+set -e
+
+echo "🚀 Starting Laravel Development Environment..."
+
+# Copy environment if needed
+[ ! -f .env ] && cp .env.docker .env
+
+# Start development services
+echo "📦 Starting development services..."
+docker-compose -f docker-compose.dev.yml up -d --build
+
+# Wait for MySQL
+echo "⏳ Waiting for MySQL..."
+until docker-compose -f docker-compose.dev.yml exec mysql mysqladmin ping -h"localhost" --silent 2>/dev/null; do
+    sleep 2
+done
+
+# Install dependencies and setup
+echo "📋 Installing dependencies..."
+docker-compose -f docker-compose.dev.yml exec app composer install --no-interaction
+docker-compose -f docker-compose.dev.yml exec app npm install
+
+# Generate app key if needed
+if ! grep -q "APP_KEY=base64:" .env; then
+    echo "🔑 Generating application key..."
+    docker-compose -f docker-compose.dev.yml exec app php artisan key:generate --no-interaction
+fi
+
+# Run migrations
+echo "🗄️  Running migrations..."
+docker-compose -f docker-compose.dev.yml exec app php artisan migrate --force
+
+echo ""
+echo "✅ Development environment ready!"
+echo "🌐 App: http://localhost"
+echo "📧 Mailhog: http://localhost:8025"
+echo ""
+echo "🔧 Commands:"
+echo "  npm run dev    # Start Vite hot reload"
+echo "  npm run build  # Build for production"
+echo "  make shell     # Access container"
+echo "  make logs      # View logs"
+echo "  make stop      # Stop services"

@@ -7,14 +7,13 @@ services:
     container_name: laravel_app
     restart: unless-stopped
     working_dir: /var/www/html
-    # Run as the container's appuser instead of forcing host user ID
-    # This allows proper permission handling through the entrypoint script
+    ports:
+      - "5173:5173"  # Vite dev server
     volumes:
       - ./:/var/www/html
       - ./docker/php/php.ini:/usr/local/etc/php/conf.d/laravel.ini
       - ./docker/php/xdebug.ini:/usr/local/etc/php/conf.d/xdebug.ini
       - vendor_cache:/var/www/html/vendor
-      - node_modules_cache:/var/www/html/node_modules
     networks:
       - laravel_network
     depends_on:
@@ -101,8 +100,6 @@ volumes:
   redis_data:
     driver: local
   vendor_cache:
-    driver: local
-  node_modules_cache:
     driver: local
 
 networks:
